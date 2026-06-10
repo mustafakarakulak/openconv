@@ -1,5 +1,9 @@
 # openConv
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/762a0cb9-16a1-44c0-9d8f-94ae4a1417fb" alt="openConv Banner">
+</p>
+
 **Open-source, fully client-side file converter.** Drop a file, pick a target format, download the result — your data never leaves the browser. There is no upload, no server-side processing, and no tracking of your files.
 
 > Images · Structured data · Documents · Audio · Video — all converted locally with WebAssembly and native browser APIs.
