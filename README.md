@@ -10,20 +10,20 @@
 
 Most online converters upload your files to a server you don't control. openConv does everything **in your browser**:
 
-- 🔒 **Private by architecture** — files are decoded, transformed and re-encoded on your device. Nothing is transmitted.
+- 🔒 **Private by architecture** — files are decoded, transformed and re-encoded on your device. **Your file contents are never uploaded.** (Two opt-in exceptions involve _metadata only_ — see [Security & privacy](#security--privacy).)
 - ⚡ **No backend** — deploys as a static site; the "engine" is the user's browser.
 - 🧩 **Pluggable** — adding a new converter is a single, self-contained module.
 - 🔭 **Observable** — every conversion is traced and logged with OpenTelemetry, including a `traceId` surfaced in the UI for support.
 
 ## Supported conversions
 
-| Family        | Conversions                                                                                   |
-| ------------- | --------------------------------------------------------------------------------------------- |
+| Family        | Conversions                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------------- |
 | **Images**    | `png` `jpeg` `webp` `gif` `bmp` `avif` `ico` `svg` → `png` `jpeg` `webp` (quality, flattening) |
 | **Data**      | `json` `yaml` `toml` `xml` `csv` `tsv` interchange (indent, header options)                    |
-| **Documents** | `markdown` ↔ `html` ↔ `txt`, `markdown`/`html` → `pdf`, `pdf` → `txt`                           |
-| **Audio**     | `mp3` `wav` `ogg` `aac` `flac` `m4a` → `mp3` `wav` `ogg` `aac` (bitrate)                        |
-| **Video**     | → `mp4` `webm`, audio extraction (`mp3`/`wav`), and `gif` (fps, width)                          |
+| **Documents** | `markdown` ↔ `html` ↔ `txt`, `markdown`/`html` → `pdf`, `pdf` → `txt`                          |
+| **Audio**     | `mp3` `wav` `ogg` `aac` `flac` `m4a` → `mp3` `wav` `ogg` `aac` (bitrate)                       |
+| **Video**     | → `mp4` `webm`, audio extraction (`mp3`/`wav`), and `gif` (fps, width)                         |
 
 Conversion engines: native **Canvas / OffscreenCanvas** (images), pure-JS parsers (data), **marked / turndown / jsPDF / pdf.js** (documents), and **ffmpeg.wasm** (audio/video).
 
@@ -141,6 +141,36 @@ That's it — the registry, UI format pickers, option controls and observability
 ## Observability
 
 Every conversion produces an OpenTelemetry trace (`conversion.execute` → `image.decode`, `image.encode`, `data.convert`, `media.convert`, …) and structured logs. Log records are correlated with the active span (`traceId`/`spanId`) regardless of `await` boundaries, because the engine hands each converter a **span-scoped logger** rather than relying on async context propagation. The result's `traceId` is shown in the UI so a user can quote it when reporting an issue.
+
+## Security & privacy
+
+openConv processes untrusted files entirely in your browser, so the security
+model is about protecting **your own session** from a maliciously-crafted file.
+
+- **HTML is sanitised.** The `markdown`/`html` → `html`/`pdf` paths run output
+  through [DOMPurify](https://github.com/cure53/DOMPurify) before it is written
+  to a file or rendered by jsPDF's live-DOM engine, so a converted file can
+  never smuggle `<script>` or `onerror=` payloads into the app's origin or into
+  the document you download.
+- **Security headers.** A Content-Security-Policy plus `X-Content-Type-Options`,
+  `Referrer-Policy`, `X-Frame-Options`, `Cross-Origin-Opener-Policy` and
+  `Permissions-Policy` are set in [`next.config.ts`](./next.config.ts). The CSP
+  pins `connect-src`/`img-src` so an injected payload cannot exfiltrate, and
+  forbids framing and plugins. _These apply to a Next.js server (`next start`);
+  a fully static `output: 'export'` deployment must set them at the CDN/host._
+- **Input size limits.** Each media family has a generous per-kind cap
+  ([`src/application/limits.ts`](./src/application/limits.ts)) so an oversized
+  file fails with a clear error instead of freezing the tab.
+- **Two opt-in network exceptions** — neither sends your file contents:
+  - **ffmpeg.wasm core** is fetched at runtime from a CDN (unpkg by default) for
+    audio/video conversions. Self-host it via `NEXT_PUBLIC_FFMPEG_CORE_URL` for
+    a fully offline / no-third-party deployment.
+  - **OpenTelemetry export** is off unless you set `NEXT_PUBLIC_OTEL_OTLP_ENDPOINT`.
+    When on, only conversion _metadata_ leaves the browser (formats, sizes, the
+    input file **extension** — never the full filename — timings and errors).
+
+A stricter nonce-based CSP (dropping `'unsafe-inline'` for scripts) is a planned
+hardening step.
 
 ## License
 

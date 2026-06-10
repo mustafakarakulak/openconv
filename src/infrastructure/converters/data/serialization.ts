@@ -255,11 +255,7 @@ export function assertTabular(value: DataValue): ReadonlyArray<TabularRow | unkn
   return value as ReadonlyArray<TabularRow | unknown[]>;
 }
 
-export function serializeDelimited(
-  value: DataValue,
-  delimiter: string,
-  header: boolean,
-): string {
+export function serializeDelimited(value: DataValue, delimiter: string, header: boolean): string {
   const rows = assertTabular(value);
   try {
     return Papa.unparse(rows as unknown[], { delimiter, header });

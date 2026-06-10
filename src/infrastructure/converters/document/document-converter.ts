@@ -27,6 +27,7 @@ import {
   joinPdfLines,
   markdownToHtml,
   markdownToText,
+  sanitizeHtml,
   textToHtml,
   textToMarkdown,
   wrapHtmlDocument,
@@ -174,10 +175,7 @@ export class DocumentConverter extends BaseConverter {
 
   // --- Pure text transforms ----------------------------------------------
 
-  private async markdownToHtml(
-    input: ConvertInput,
-    ctx: ConverterContext,
-  ): Promise<ConvertOutput> {
+  private async markdownToHtml(input: ConvertInput, ctx: ConverterContext): Promise<ConvertOutput> {
     const md = await input.file.text();
     this.throwIfAborted(ctx.signal);
     const body = markdownToHtml(md);
@@ -185,20 +183,14 @@ export class DocumentConverter extends BaseConverter {
     return this.textOutput(input, html, ctx, { sourceChars: md.length });
   }
 
-  private async htmlToMarkdown(
-    input: ConvertInput,
-    ctx: ConverterContext,
-  ): Promise<ConvertOutput> {
+  private async htmlToMarkdown(input: ConvertInput, ctx: ConverterContext): Promise<ConvertOutput> {
     const html = await input.file.text();
     this.throwIfAborted(ctx.signal);
     const md = htmlToMarkdown(html);
     return this.textOutput(input, md, ctx, { sourceChars: html.length });
   }
 
-  private async markdownToTxt(
-    input: ConvertInput,
-    ctx: ConverterContext,
-  ): Promise<ConvertOutput> {
+  private async markdownToTxt(input: ConvertInput, ctx: ConverterContext): Promise<ConvertOutput> {
     const md = await input.file.text();
     this.throwIfAborted(ctx.signal);
     const txt = markdownToText(md);
@@ -219,10 +211,7 @@ export class DocumentConverter extends BaseConverter {
     return this.textOutput(input, html, ctx, { sourceChars: txt.length });
   }
 
-  private async txtToMarkdown(
-    input: ConvertInput,
-    ctx: ConverterContext,
-  ): Promise<ConvertOutput> {
+  private async txtToMarkdown(input: ConvertInput, ctx: ConverterContext): Promise<ConvertOutput> {
     const txt = await input.file.text();
     this.throwIfAborted(ctx.signal);
     const md = textToMarkdown(txt);
@@ -260,8 +249,10 @@ export class DocumentConverter extends BaseConverter {
       this.throwIfAborted(ctx.signal);
       ctx.reportProgress({ ratio: 0.2, message: "Rendering markup" });
 
+      // markdownToHtml already sanitises; raw HTML input must be sanitised too
+      // before jsPDF renders it into the live DOM (script/onerror execution).
       const body =
-        input.source.id === FORMATS.markdown.id ? markdownToHtml(source) : source;
+        input.source.id === FORMATS.markdown.id ? markdownToHtml(source) : sanitizeHtml(source);
 
       ctx.reportProgress({ ratio: 0.5, message: "Generating PDF" });
       try {
@@ -273,7 +264,11 @@ export class DocumentConverter extends BaseConverter {
         span.logger.info("pdf generated", { outputBytes: blob.size });
         return {
           blob,
-          attributes: { pageSize: options.pageSize, margin: options.margin, outputBytes: blob.size },
+          attributes: {
+            pageSize: options.pageSize,
+            margin: options.margin,
+            outputBytes: blob.size,
+          },
         };
       } catch (cause) {
         if (cause instanceof ConversionFailedError) throw cause;

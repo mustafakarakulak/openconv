@@ -45,7 +45,7 @@ function makeSpan(): Span {
 function makeTracer(): Tracer {
   return {
     startSpan: () => makeSpan(),
-    withSpan: async <T,>(
+    withSpan: async <T>(
       _name: string,
       fn: (span: Span) => Promise<T> | T,
       _options?: SpanOptions,

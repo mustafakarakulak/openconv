@@ -55,6 +55,21 @@ export class InvalidInputError extends OpenConvError {
   readonly code = "INVALID_INPUT";
 }
 
+/** The input file exceeds the maximum size that can be converted in-browser. */
+export class InputTooLargeError extends OpenConvError {
+  readonly code = "INPUT_TOO_LARGE";
+  constructor(
+    readonly sizeBytes: number,
+    readonly limitBytes: number,
+    options?: { context?: ErrorContext },
+  ) {
+    super(
+      `Input is too large (${sizeBytes} bytes); the maximum for in-browser conversion is ${limitBytes} bytes.`,
+      { context: { ...options?.context, sizeBytes, limitBytes } },
+    );
+  }
+}
+
 /** The source format of an input file could not be determined. */
 export class FormatDetectionError extends OpenConvError {
   readonly code = "FORMAT_DETECTION_FAILED";

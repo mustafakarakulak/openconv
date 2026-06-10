@@ -115,6 +115,7 @@ export const ar: Dictionary = {
     CONVERSION_FAILED: "فشل التحويل. جرّب ملفًا أو صيغة مختلفة.",
     CONVERSION_CANCELED: "أُلغي التحويل.",
     INVALID_INPUT: "تعذّرت قراءة الملف أو أنه تالف.",
+    INPUT_TOO_LARGE: "هذا الملف كبير جدًا بحيث يتعذّر تحويله في المتصفح.",
     FORMAT_DETECTION_FAILED: "تعذّر تحديد صيغة هذا الملف.",
   },
   locale: {

@@ -34,10 +34,7 @@ export function normalizePageSize(value: string): PageSize {
  * Resolves the raw option bag into a fully-validated {@link PdfRenderOptions}.
  * Pure so the option/clamping logic can be tested without jsPDF.
  */
-export function resolvePdfOptions(input: {
-  pageSize: string;
-  margin: number;
-}): PdfRenderOptions {
+export function resolvePdfOptions(input: { pageSize: string; margin: number }): PdfRenderOptions {
   return {
     pageSize: normalizePageSize(input.pageSize),
     margin: Math.round(clamp(input.margin, 0, 72)),

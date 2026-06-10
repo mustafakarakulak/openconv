@@ -133,12 +133,9 @@ export function useConversions() {
     [registry],
   );
 
-  const setOption = useCallback(
-    (id: string, key: string, value: string | number | boolean) => {
-      dispatch({ type: "setOption", id, key, value });
-    },
-    [],
-  );
+  const setOption = useCallback((id: string, key: string, value: string | number | boolean) => {
+    dispatch({ type: "setOption", id, key, value });
+  }, []);
 
   const remove = useCallback((id: string) => {
     controllers.current.get(id)?.abort();

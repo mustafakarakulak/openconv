@@ -171,7 +171,8 @@ function JobStatus({ job }: { job: UiJob }) {
 
   if (job.status === "running") {
     const ratio = job.progress?.ratio;
-    const pct = typeof ratio === "number" ? Math.round(Math.min(1, Math.max(0, ratio)) * 100) : null;
+    const pct =
+      typeof ratio === "number" ? Math.round(Math.min(1, Math.max(0, ratio)) * 100) : null;
     return (
       <div className="space-y-1.5">
         <div className="flex items-center gap-2 text-xs text-zinc-400">

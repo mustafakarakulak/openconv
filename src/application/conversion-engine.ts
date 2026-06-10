@@ -10,14 +10,16 @@ import type { ConversionRequest, ConversionResult, OutputFile } from "@/core/dom
 import {
   ConversionCanceledError,
   ConversionFailedError,
+  InputTooLargeError,
   UnsupportedConversionError,
   isOpenConvError,
   toErrorMessage,
 } from "@/core/domain/errors";
 import type { ConverterContext, ConversionProgress } from "@/core/ports/converter";
 import { childTracer, type Logger, type Tracer } from "@/core/ports/observability";
-import { deriveOutputName } from "@/lib/filename";
+import { deriveOutputName, fileExtension } from "@/lib/filename";
 import type { ConverterRegistry } from "./converter-registry";
+import { maxInputBytesFor } from "./limits";
 import { resolveOptions } from "./resolve-options";
 
 export interface ConversionEngineDeps {
@@ -36,7 +38,10 @@ export interface ConvertOptions {
 export class ConversionEngine {
   constructor(private readonly deps: ConversionEngineDeps) {}
 
-  async convert(request: ConversionRequest, options: ConvertOptions = {}): Promise<ConversionResult> {
+  async convert(
+    request: ConversionRequest,
+    options: ConvertOptions = {},
+  ): Promise<ConversionResult> {
     const { registry, tracer } = this.deps;
     const { jobId, input, target } = request;
     const signal = options.signal ?? new AbortController().signal;
@@ -49,7 +54,9 @@ export class ConversionEngine {
           "openconv.job.id": jobId,
           "openconv.source.format": input.format.id,
           "openconv.target.format": target.id,
-          "openconv.input.name": input.name,
+          // Privacy: record only the extension, never the raw filename — names
+          // can contain personal data and may be exported when OTLP is enabled.
+          "openconv.input.extension": fileExtension(input.name),
           "openconv.input.size_bytes": input.size,
           "openconv.input.kind": input.format.kind,
         });
@@ -73,6 +80,18 @@ export class ConversionEngine {
           throw new UnsupportedConversionError(input.format.id, target.id);
         }
         span.setAttribute("openconv.converter.id", converter.id);
+
+        const limitBytes = maxInputBytesFor(input.format.kind);
+        if (input.size > limitBytes) {
+          log.error("conversion.too_large", undefined, {
+            "openconv.input.size_bytes": input.size,
+            "openconv.input.limit_bytes": limitBytes,
+            "openconv.input.kind": input.format.kind,
+          });
+          throw new InputTooLargeError(input.size, limitBytes, {
+            context: { source: input.format.id, target: target.id, kind: input.format.kind },
+          });
+        }
 
         const capability = registry.getCapability(input.format.id, target.id);
         const resolvedOptions = resolveOptions(capability, request.options);

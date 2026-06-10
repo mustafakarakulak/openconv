@@ -2,11 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { InvalidInputError } from "@/core/domain/errors";
 import type { ConversionOptions } from "@/core/domain/conversion";
 import type { FileFormat } from "@/core/domain/format";
-import type {
-  ConversionProgress,
-  ConvertInput,
-  ConverterContext,
-} from "@/core/ports/converter";
+import type { ConversionProgress, ConvertInput, ConverterContext } from "@/core/ports/converter";
 import type { Logger, Span, Tracer } from "@/core/ports/observability";
 import { ImageCanvasConverter } from "./image-canvas-converter";
 import { imageConverters } from "./index";

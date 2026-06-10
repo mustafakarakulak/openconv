@@ -30,7 +30,11 @@ export const IMAGE_SOURCE_FORMATS: readonly FileFormat[] = [
  * `OffscreenCanvas.convertToBlob` / `HTMLCanvasElement.toBlob` support
  * everywhere.
  */
-export const IMAGE_TARGET_FORMATS: readonly FileFormat[] = [FORMATS.png, FORMATS.jpeg, FORMATS.webp];
+export const IMAGE_TARGET_FORMATS: readonly FileFormat[] = [
+  FORMATS.png,
+  FORMATS.jpeg,
+  FORMATS.webp,
+];
 
 /** Default JPEG/WebP quality, matching the canvas spec default. */
 export const DEFAULT_QUALITY = 0.92;
@@ -45,7 +49,10 @@ export const FALLBACK_MIME = "application/octet-stream";
 const OPAQUE_TARGET_IDS: ReadonlySet<FormatId> = new Set<FormatId>([FORMATS.jpeg.id]);
 
 /** Targets that accept a quality factor in [0, 1]. */
-const LOSSY_TARGET_IDS: ReadonlySet<FormatId> = new Set<FormatId>([FORMATS.jpeg.id, FORMATS.webp.id]);
+const LOSSY_TARGET_IDS: ReadonlySet<FormatId> = new Set<FormatId>([
+  FORMATS.jpeg.id,
+  FORMATS.webp.id,
+]);
 
 /** Option keys, centralised so the descriptor and the resolver cannot drift. */
 export const OPTION_KEYS = {
@@ -158,7 +165,8 @@ export function resolveBackground(options: ConversionOptions): string {
 }
 
 const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-const RGB_COLOR = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*(?:0|1|0?\.\d+)\s*)?\)$/i;
+const RGB_COLOR =
+  /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*(?:0|1|0?\.\d+)\s*)?\)$/i;
 const NAMED_COLORS: ReadonlySet<string> = new Set([
   "white",
   "black",

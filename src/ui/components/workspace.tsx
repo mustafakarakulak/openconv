@@ -28,7 +28,12 @@ export function Workspace() {
     let convertibleCount = 0;
     let hasFinished = false;
     for (const job of jobs) {
-      if (job.sourceFormat && job.targetId && job.status !== "running" && job.status !== "succeeded") {
+      if (
+        job.sourceFormat &&
+        job.targetId &&
+        job.status !== "running" &&
+        job.status !== "succeeded"
+      ) {
         convertibleCount += 1;
       }
       if (FINISHED.has(job.status)) hasFinished = true;

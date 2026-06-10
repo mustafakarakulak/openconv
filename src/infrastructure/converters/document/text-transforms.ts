@@ -7,15 +7,36 @@
  */
 import { marked } from "marked";
 import TurndownService from "turndown";
+import DOMPurify from "dompurify";
 
 /**
- * Renders Markdown source to an HTML fragment string.
+ * Strips active/dangerous markup — `<script>`, event-handler attributes
+ * (`onerror`, `onload`, …) and `javascript:` URLs — from an HTML string while
+ * preserving structural and formatting elements.
+ *
+ * Applied to every HTML fragment we either emit as a downloadable document or
+ * hand to jsPDF's `.html()` engine, which renders into the live DOM. Without
+ * this, converting an attacker-supplied Markdown/HTML file could execute script
+ * in the app's own origin (or in the produced document), so sanitisation is a
+ * hard security boundary, not a nicety.
+ */
+export function sanitizeHtml(html: string): string {
+  // DOMPurify requires a DOM. Converters only run in the browser (tests run
+  // under happy-dom); on the server we never render HTML, so pass it through.
+  if (typeof window === "undefined") return html;
+  return DOMPurify.sanitize(html);
+}
+
+/**
+ * Renders Markdown source to a SANITISED HTML fragment string.
  *
  * `marked` is configured with `async: false` so the call is synchronous and
  * returns a plain `string` (the default overload is `string | Promise<string>`).
+ * `marked` passes raw HTML through verbatim, so the result is run through
+ * {@link sanitizeHtml} before it ever reaches a document or the PDF renderer.
  */
 export function markdownToHtml(markdown: string): string {
-  return marked.parse(markdown, { async: false, gfm: true, breaks: false });
+  return sanitizeHtml(marked.parse(markdown, { async: false, gfm: true, breaks: false }));
 }
 
 /**
@@ -130,9 +151,7 @@ export function textToMarkdown(text: string): string {
  * inline delimiters so arbitrary plain text does not accidentally become markup.
  */
 export function escapeMarkdown(line: string): string {
-  return line
-    .replace(/([\\`*_{}[\]()#+\-!])/g, "\\$1")
-    .replace(/^(\s*)\\([->])/, "$1\\$2");
+  return line.replace(/([\\`*_{}[\]()#+\-!])/g, "\\$1").replace(/^(\s*)\\([->])/, "$1\\$2");
 }
 
 /**

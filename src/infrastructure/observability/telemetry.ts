@@ -23,10 +23,7 @@ import {
   WebTracerProvider,
   type SpanProcessor,
 } from "@opentelemetry/sdk-trace-web";
-import {
-  ATTR_SERVICE_NAME,
-  ATTR_SERVICE_VERSION,
-} from "@opentelemetry/semantic-conventions";
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
 import type { Logger, Tracer } from "@/core/ports/observability";
 import { readObservabilityConfig, type ObservabilityConfig } from "./config";
 import { NoopLogger, NoopTracer } from "./noop";

@@ -33,7 +33,10 @@ describe("ConverterRegistry", () => {
       ]),
     );
 
-    const targets = registry.targetsFor("json").map((f) => f.id).sort();
+    const targets = registry
+      .targetsFor("json")
+      .map((f) => f.id)
+      .sort();
     expect(targets).toEqual(["xml", "yaml"]);
     expect(registry.targetsFor("png")).toEqual([]);
   });
@@ -63,7 +66,10 @@ describe("ConverterRegistry", () => {
   it("lists distinct known formats", () => {
     const registry = new ConverterRegistry();
     registry.register(fakeConverter("c1", [{ source: FORMATS.json, target: FORMATS.yaml }]));
-    const ids = registry.listFormats().map((f) => f.id).sort();
+    const ids = registry
+      .listFormats()
+      .map((f) => f.id)
+      .sort();
     expect(ids).toEqual(["json", "yaml"]);
   });
 });

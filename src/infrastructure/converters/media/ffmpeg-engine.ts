@@ -20,6 +20,30 @@ export function coreBaseUrl(): string {
 let ffmpegInstance: FFmpeg | null = null;
 let loadPromise: Promise<FFmpeg> | null = null;
 
+/** Tail of the media-conversion queue; see {@link runExclusiveMedia}. */
+let mediaQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Serialises media conversions across the whole tab.
+ *
+ * There is a SINGLE shared {@link FFmpeg} instance operating on FIXED in-memory
+ * filenames (`input.<ext>` / `output.<ext>`). Two conversions running at once
+ * would overwrite each other's files, cross their progress events, and one's
+ * abort ({@link terminateFfmpeg}) would kill the other. This queue makes each
+ * conversion wait for the previous one to settle, so concurrent "Convert"
+ * clicks run back-to-back instead of corrupting each other.
+ */
+export function runExclusiveMedia<T>(task: () => Promise<T>): Promise<T> {
+  // Chain on the prior tail regardless of how it settled, so one failure does
+  // not poison the queue for subsequent tasks.
+  const result = mediaQueue.then(task, task);
+  mediaQueue = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
+
 /** Optional hook invoked once while the core is (down)loading. */
 export interface FfmpegLoadHooks {
   onLoadStart?(): void;
@@ -88,4 +112,5 @@ export function terminateFfmpeg(): void {
 export function __resetFfmpegForTests(): void {
   ffmpegInstance = null;
   loadPromise = null;
+  mediaQueue = Promise.resolve();
 }

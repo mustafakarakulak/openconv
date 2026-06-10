@@ -12,3 +12,16 @@ export function deriveOutputName(inputName: string, target: FileFormat): string 
   const safeBase = base.trim().length > 0 ? base.trim() : "converted";
   return `${safeBase}.${extension}`;
 }
+
+/**
+ * Extracts the lowercased extension (without the dot) from a filename, or an
+ * empty string when there is none. Used for telemetry: the extension is safe to
+ * record, whereas the full filename can carry personal data, so we never log
+ * the raw name.
+ */
+export function fileExtension(name: string): string {
+  const base = name.split(/[\\/]/).pop() ?? name;
+  const lastDot = base.lastIndexOf(".");
+  if (lastDot <= 0) return "";
+  return base.slice(lastDot + 1).toLowerCase();
+}

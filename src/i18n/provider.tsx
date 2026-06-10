@@ -22,7 +22,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { DEFAULT_LOCALE, dirFor, resolveInitialLocale, type Direction, type Locale } from "./config";
+import {
+  DEFAULT_LOCALE,
+  dirFor,
+  resolveInitialLocale,
+  type Direction,
+  type Locale,
+} from "./config";
 import { DICTIONARIES, type Dictionary } from "./dictionaries";
 
 const STORAGE_KEY = "openconv.locale";

@@ -15,10 +15,7 @@
  * Replaces every `{name}` token in `template` with the matching value from
  * `params`. Tokens without a matching param are left untouched.
  */
-export function interpolate(
-  template: string,
-  params: Record<string, string | number>,
-): string {
+export function interpolate(template: string, params: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (match, key: string) => {
     const value = params[key];
     return value === undefined ? match : String(value);
@@ -30,10 +27,6 @@ export function interpolate(
  * (typically the original English string carried by the domain) when the key
  * is absent. Keeps dynamic lookups total under `noUncheckedIndexedAccess`.
  */
-export function pick(
-  record: Record<string, string>,
-  key: string,
-  fallback: string,
-): string {
+export function pick(record: Record<string, string>, key: string, fallback: string): string {
   return record[key] ?? fallback;
 }

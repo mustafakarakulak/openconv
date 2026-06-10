@@ -23,11 +23,7 @@ import {
   resolveMediaOptions,
 } from "./ffmpeg-args";
 import type { ProgressEvent } from "@ffmpeg/ffmpeg";
-import {
-  getFfmpeg,
-  loadFetchFile,
-  terminateFfmpeg,
-} from "./ffmpeg-engine";
+import { getFfmpeg, loadFetchFile, runExclusiveMedia, terminateFfmpeg } from "./ffmpeg-engine";
 
 export class MediaConverter extends BaseConverter {
   readonly id = "media-ffmpeg";
@@ -49,101 +45,106 @@ export class MediaConverter extends BaseConverter {
       target: target.id,
     });
 
-    return ctx.tracer.withSpan(
-      "media.convert",
-      async (span) => {
-        span.setAttributes({
-          "media.source": source.id,
-          "media.target": target.id,
-          "media.args": args.join(" "),
-        });
-
-        ctx.reportProgress({ ratio: 0, message: "Loading conversion engine…" });
-        const ffmpeg = await getFfmpeg({
-          onLoadStart: () => log.info("loading ffmpeg core"),
-        });
-        this.throwIfAborted(ctx.signal);
-
-        const onProgress = ({ progress }: ProgressEvent): void => {
-          if (typeof progress === "number" && Number.isFinite(progress)) {
-            const ratio = Math.min(Math.max(progress, 0), 1);
-            ctx.reportProgress({ ratio, message: "Transcoding…" });
-          }
-        };
-
-        let aborted = false;
-        const onAbort = (): void => {
-          aborted = true;
-          // ffmpeg.wasm can only cancel an in-flight exec by killing its worker.
-          terminateFfmpeg();
-        };
-        ctx.signal.addEventListener("abort", onAbort, { once: true });
-        ffmpeg.on("progress", onProgress);
-
-        try {
-          const fetchFile = await loadFetchFile();
-          const bytes = await fetchFile(input.file);
-          this.throwIfAborted(ctx.signal);
-
-          await ffmpeg.writeFile(inputName, bytes);
-          log.debug("wrote input to ffmpeg fs", { bytes: bytes.byteLength });
-
-          ctx.reportProgress({ ratio: 0, message: "Transcoding…" });
-          const exitCode = await ffmpeg.exec(args);
-          if (aborted) {
-            this.throwIfAborted(ctx.signal);
-          }
-          if (exitCode !== 0) {
-            throw new ConversionFailedError(
-              `ffmpeg exited with code ${exitCode} converting ${source.id} → ${target.id}.`,
-              { context: { exitCode, args } },
-            );
-          }
-
-          const data = await ffmpeg.readFile(outputName);
-          const outputBytes = toUint8Array(data);
-          if (outputBytes.byteLength === 0) {
-            throw new ConversionFailedError(
-              `ffmpeg produced an empty ${target.id} file.`,
-              { context: { args } },
-            );
-          }
-
-          const blob = new Blob([toArrayBuffer(outputBytes)], {
-            type: target.mimeTypes[0] ?? "application/octet-stream",
+    // Serialise against any other in-flight media conversion: the ffmpeg core
+    // is a single shared instance on fixed filenames, so concurrent runs would
+    // corrupt each other. Queued jobs that get aborted fail fast here.
+    return runExclusiveMedia(() => {
+      this.throwIfAborted(ctx.signal);
+      return ctx.tracer.withSpan(
+        "media.convert",
+        async (span) => {
+          span.setAttributes({
+            "media.source": source.id,
+            "media.target": target.id,
+            "media.args": args.join(" "),
           });
 
-          span.setAttribute("media.output_bytes", outputBytes.byteLength);
-          ctx.reportProgress({ ratio: 1, message: "Done" });
+          ctx.reportProgress({ ratio: 0, message: "Loading conversion engine…" });
+          const ffmpeg = await getFfmpeg({
+            onLoadStart: () => log.info("loading ffmpeg core"),
+          });
+          this.throwIfAborted(ctx.signal);
 
-          return {
-            blob,
-            attributes: {
-              sourceBytes: input.file.size,
-              outputBytes: outputBytes.byteLength,
-              ffmpegArgs: args.join(" "),
-            },
+          const onProgress = ({ progress }: ProgressEvent): void => {
+            if (typeof progress === "number" && Number.isFinite(progress)) {
+              const ratio = Math.min(Math.max(progress, 0), 1);
+              ctx.reportProgress({ ratio, message: "Transcoding…" });
+            }
           };
-        } catch (error) {
-          if (error instanceof ConversionFailedError) throw error;
-          // ConversionCanceledError (from throwIfAborted) should propagate as-is.
-          if (isCanceled(error)) throw error;
-          throw new ConversionFailedError(
-            `Failed to convert ${source.id} → ${target.id}: ${describeError(error)}`,
-            { cause: error, context: { args } },
-          );
-        } finally {
-          ctx.signal.removeEventListener("abort", onAbort);
-          // The instance may have been terminated on abort; guard cleanup.
-          if (!aborted) {
-            ffmpeg.off("progress", onProgress);
-            await safeDelete(ffmpeg, inputName);
-            await safeDelete(ffmpeg, outputName);
+
+          let aborted = false;
+          const onAbort = (): void => {
+            aborted = true;
+            // ffmpeg.wasm can only cancel an in-flight exec by killing its worker.
+            terminateFfmpeg();
+          };
+          ctx.signal.addEventListener("abort", onAbort, { once: true });
+          ffmpeg.on("progress", onProgress);
+
+          try {
+            const fetchFile = await loadFetchFile();
+            const bytes = await fetchFile(input.file);
+            this.throwIfAborted(ctx.signal);
+
+            await ffmpeg.writeFile(inputName, bytes);
+            log.debug("wrote input to ffmpeg fs", { bytes: bytes.byteLength });
+
+            ctx.reportProgress({ ratio: 0, message: "Transcoding…" });
+            const exitCode = await ffmpeg.exec(args);
+            if (aborted) {
+              this.throwIfAborted(ctx.signal);
+            }
+            if (exitCode !== 0) {
+              throw new ConversionFailedError(
+                `ffmpeg exited with code ${exitCode} converting ${source.id} → ${target.id}.`,
+                { context: { exitCode, args } },
+              );
+            }
+
+            const data = await ffmpeg.readFile(outputName);
+            const outputBytes = toUint8Array(data);
+            if (outputBytes.byteLength === 0) {
+              throw new ConversionFailedError(`ffmpeg produced an empty ${target.id} file.`, {
+                context: { args },
+              });
+            }
+
+            const blob = new Blob([toArrayBuffer(outputBytes)], {
+              type: target.mimeTypes[0] ?? "application/octet-stream",
+            });
+
+            span.setAttribute("media.output_bytes", outputBytes.byteLength);
+            ctx.reportProgress({ ratio: 1, message: "Done" });
+
+            return {
+              blob,
+              attributes: {
+                sourceBytes: input.file.size,
+                outputBytes: outputBytes.byteLength,
+                ffmpegArgs: args.join(" "),
+              },
+            };
+          } catch (error) {
+            if (error instanceof ConversionFailedError) throw error;
+            // ConversionCanceledError (from throwIfAborted) should propagate as-is.
+            if (isCanceled(error)) throw error;
+            throw new ConversionFailedError(
+              `Failed to convert ${source.id} → ${target.id}: ${describeError(error)}`,
+              { cause: error, context: { args } },
+            );
+          } finally {
+            ctx.signal.removeEventListener("abort", onAbort);
+            // The instance may have been terminated on abort; guard cleanup.
+            if (!aborted) {
+              ffmpeg.off("progress", onProgress);
+              await safeDelete(ffmpeg, inputName);
+              await safeDelete(ffmpeg, outputName);
+            }
           }
-        }
-      },
-      { attributes: { converter: this.id }, kind: "internal" },
-    );
+        },
+        { attributes: { converter: this.id }, kind: "internal" },
+      );
+    });
   }
 }
 

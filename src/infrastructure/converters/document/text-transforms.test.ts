@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+// DOMPurify (used by markdownToHtml/sanitizeHtml) needs a spec-faithful DOM;
+// happy-dom mis-serialises sanitised output, so these tests run under jsdom.
 import { describe, it, expect } from "vitest";
 import {
   escapeHtml,
@@ -8,6 +11,7 @@ import {
   markdownToHtml,
   markdownToText,
   normalizeNewlines,
+  sanitizeHtml,
   splitParagraphs,
   textToHtml,
   textToHtmlBody,
@@ -63,6 +67,39 @@ describe("markdownToHtml", () => {
   it("returns a string synchronously", () => {
     const out = markdownToHtml("plain");
     expect(typeof out).toBe("string");
+  });
+
+  it("strips raw <script> embedded in Markdown", () => {
+    const html = markdownToHtml("# Title\n\n<script>alert(document.cookie)</script>");
+    expect(html).toContain("Title");
+    expect(html).not.toContain("<script");
+    expect(html).not.toContain("alert(document.cookie)");
+  });
+
+  it("strips event-handler attributes and javascript: URLs", () => {
+    const html = markdownToHtml('<img src=x onerror="steal()">\n\n[x](javascript:steal())');
+    expect(html).not.toContain("onerror");
+    expect(html).not.toContain("javascript:");
+  });
+});
+
+describe("sanitizeHtml", () => {
+  it("removes <script> while keeping surrounding markup", () => {
+    const out = sanitizeHtml("<p>safe</p><script>evil()</script>");
+    expect(out).toContain("<p>safe</p>");
+    expect(out).not.toContain("<script");
+    expect(out).not.toContain("evil()");
+  });
+
+  it("removes inline event handlers", () => {
+    const out = sanitizeHtml('<img src="x" onerror="evil()">');
+    expect(out).not.toContain("onerror");
+  });
+
+  it("preserves benign formatting and links", () => {
+    const out = sanitizeHtml('<h1>Hi</h1><a href="https://example.com">link</a>');
+    expect(out).toContain("<h1>Hi</h1>");
+    expect(out).toContain('href="https://example.com"');
   });
 });
 
@@ -143,18 +180,11 @@ describe("normalizeNewlines", () => {
 
 describe("splitParagraphs", () => {
   it("splits on blank lines and trims empties", () => {
-    expect(splitParagraphs("one\n\ntwo\n\n\n\nthree\n\n")).toEqual([
-      "one",
-      "two",
-      "three",
-    ]);
+    expect(splitParagraphs("one\n\ntwo\n\n\n\nthree\n\n")).toEqual(["one", "two", "three"]);
   });
 
   it("keeps single newlines inside a paragraph", () => {
-    expect(splitParagraphs("line1\nline2\n\npara2")).toEqual([
-      "line1\nline2",
-      "para2",
-    ]);
+    expect(splitParagraphs("line1\nline2\n\npara2")).toEqual(["line1\nline2", "para2"]);
   });
 
   it("returns empty array for whitespace-only input", () => {
@@ -246,9 +276,7 @@ describe("htmlToText", () => {
   });
 
   it("drops script and style content", () => {
-    const text = htmlToText(
-      "<style>p{color:red}</style><p>visible</p><script>alert(1)</script>",
-    );
+    const text = htmlToText("<style>p{color:red}</style><p>visible</p><script>alert(1)</script>");
     expect(text).toBe("visible");
     expect(text).not.toContain("color:red");
     expect(text).not.toContain("alert");

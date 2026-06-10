@@ -8,12 +8,7 @@
 import type { FileFormat } from "./format";
 
 /** Lifecycle of a single conversion job, as surfaced to the UI. */
-export type ConversionStatus =
-  | "pending"
-  | "running"
-  | "succeeded"
-  | "failed"
-  | "canceled";
+export type ConversionStatus = "pending" | "running" | "succeeded" | "failed" | "canceled";
 
 /**
  * User/runtime-supplied options for a conversion (e.g. JPEG quality). Keys are

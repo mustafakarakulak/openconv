@@ -1,11 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { FORMATS } from "@/core/domain/format";
 import { ConversionCanceledError } from "@/core/domain/errors";
-import type {
-  ConversionProgress,
-  ConvertInput,
-  ConverterContext,
-} from "@/core/ports/converter";
+import type { ConversionProgress, ConvertInput, ConverterContext } from "@/core/ports/converter";
 import type { Logger, Span, Tracer } from "@/core/ports/observability";
 import { MediaConverter } from "./media-converter";
 import { mediaConverters } from "./index";
@@ -120,8 +116,6 @@ describe("MediaConverter.convert cancellation", () => {
     const { ctx } = makeContext(controller.signal);
     const c = new MediaConverter();
 
-    await expect(c.convert(makeInput(), ctx)).rejects.toBeInstanceOf(
-      ConversionCanceledError,
-    );
+    await expect(c.convert(makeInput(), ctx)).rejects.toBeInstanceOf(ConversionCanceledError);
   });
 });

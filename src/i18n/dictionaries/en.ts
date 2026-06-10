@@ -123,6 +123,7 @@ export const en = {
     CONVERSION_FAILED: "The conversion failed. Try a different file or format.",
     CONVERSION_CANCELED: "The conversion was canceled.",
     INVALID_INPUT: "The file couldn't be read or is malformed.",
+    INPUT_TOO_LARGE: "This file is too large to convert in the browser.",
     FORMAT_DETECTION_FAILED: "Couldn't determine this file's format.",
   },
   locale: {

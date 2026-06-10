@@ -7,7 +7,8 @@
 import type { Dictionary } from "./en";
 
 /** video → gif notu; tüm video kaynak biçimleri için ortak. */
-const GIF_NOTE: string = "Hareketli GIF; boyut ve akıcılık dengesi için fps ve genişliği ayarlayın.";
+const GIF_NOTE: string =
+  "Hareketli GIF; boyut ve akıcılık dengesi için fps ve genişliği ayarlayın.";
 
 export const tr: Dictionary = {
   app: {
@@ -115,6 +116,7 @@ export const tr: Dictionary = {
     CONVERSION_FAILED: "Dönüşüm başarısız oldu. Farklı bir dosya veya biçim deneyin.",
     CONVERSION_CANCELED: "Dönüşüm iptal edildi.",
     INVALID_INPUT: "Dosya okunamadı veya bozuk.",
+    INPUT_TOO_LARGE: "Bu dosya tarayıcıda dönüştürülemeyecek kadar büyük.",
     FORMAT_DETECTION_FAILED: "Bu dosyanın biçimi belirlenemedi.",
   },
   locale: {

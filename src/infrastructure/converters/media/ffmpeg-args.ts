@@ -9,10 +9,7 @@
 import type { ConversionOptions } from "@/core/domain/conversion";
 import { FORMATS } from "@/core/domain/format";
 import type { FileFormat, FormatId } from "@/core/domain/format";
-import type {
-  ConversionCapability,
-  ConverterOptionDescriptor,
-} from "@/core/ports/converter";
+import type { ConversionCapability, ConverterOptionDescriptor } from "@/core/ports/converter";
 
 /** Audio source/target formats this converter understands. */
 export const AUDIO_FORMATS: readonly FileFormat[] = [
@@ -45,10 +42,7 @@ export const VIDEO_FORMATS: readonly FileFormat[] = [
 export const VIDEO_TARGETS: readonly FileFormat[] = [FORMATS.mp4, FORMATS.webm];
 
 /** Audio formats a video can have its track extracted into. */
-export const VIDEO_AUDIO_EXTRACT_TARGETS: readonly FileFormat[] = [
-  FORMATS.mp3,
-  FORMATS.wav,
-];
+export const VIDEO_AUDIO_EXTRACT_TARGETS: readonly FileFormat[] = [FORMATS.mp3, FORMATS.wav];
 
 /** Allowed audio bitrate choices (also the values fed to ffmpeg's -b:a). */
 export const AUDIO_BITRATES = ["128k", "192k", "256k", "320k"] as const;
@@ -256,14 +250,7 @@ export function buildFfmpegArgs(
       );
       break;
     case FORMATS.webm.id:
-      args.push(
-        "-c:v",
-        "libvpx-vp9",
-        "-c:a",
-        "libopus",
-        "-b:a",
-        options.audioBitrate,
-      );
+      args.push("-c:v", "libvpx-vp9", "-c:a", "libopus", "-b:a", options.audioBitrate);
       break;
     default:
       // Should be unreachable given the capability matrix; let ffmpeg infer

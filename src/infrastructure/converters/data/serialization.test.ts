@@ -198,7 +198,12 @@ describe("delimited (CSV/TSV)", () => {
   });
 
   it("assertTabular accepts arrays of scalar arrays", () => {
-    expect(assertTabular([[1, 2], [3, 4]])).toHaveLength(2);
+    expect(
+      assertTabular([
+        [1, 2],
+        [3, 4],
+      ]),
+    ).toHaveLength(2);
   });
 
   it("assertTabular rejects a non-array value", () => {

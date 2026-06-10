@@ -40,9 +40,7 @@ describe("resolveMediaOptions", () => {
   });
 
   it("falls back on an unknown bitrate", () => {
-    expect(resolveMediaOptions({ audioBitrate: "999k" }).audioBitrate).toBe(
-      DEFAULT_AUDIO_BITRATE,
-    );
+    expect(resolveMediaOptions({ audioBitrate: "999k" }).audioBitrate).toBe(DEFAULT_AUDIO_BITRATE);
   });
 
   it("parses numeric fps/width from strings", () => {
@@ -231,9 +229,7 @@ describe("capability matrix", () => {
   it("covers every audio source to every audio target except identity", () => {
     for (const source of AUDIO_FORMATS) {
       for (const target of AUDIO_TARGETS) {
-        const found = caps.find(
-          (c) => c.source.id === source.id && c.target.id === target.id,
-        );
+        const found = caps.find((c) => c.source.id === source.id && c.target.id === target.id);
         if (source.id === target.id) {
           expect(found).toBeUndefined();
         } else {
@@ -246,9 +242,7 @@ describe("capability matrix", () => {
   it("covers video->video (non-identity), video->audio-extract and video->gif", () => {
     for (const source of VIDEO_FORMATS) {
       for (const target of VIDEO_TARGETS) {
-        const found = caps.find(
-          (c) => c.source.id === source.id && c.target.id === target.id,
-        );
+        const found = caps.find((c) => c.source.id === source.id && c.target.id === target.id);
         if (source.id === target.id) expect(found).toBeUndefined();
         else expect(found).toBeDefined();
       }

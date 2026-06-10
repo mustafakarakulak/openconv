@@ -1,12 +1,11 @@
+// @vitest-environment jsdom
+// The markdown/html text paths run DOMPurify (via markdownToHtml), which needs
+// a spec-faithful DOM; happy-dom mis-serialises its output, so use jsdom here.
 import { describe, it, expect } from "vitest";
 import { FORMATS } from "@/core/domain/format";
 import type { FileFormat } from "@/core/domain/format";
 import { InvalidInputError } from "@/core/domain/errors";
-import type {
-  ConversionProgress,
-  ConvertInput,
-  ConverterContext,
-} from "@/core/ports/converter";
+import type { ConversionProgress, ConvertInput, ConverterContext } from "@/core/ports/converter";
 import type { Logger, Span, SpanOptions, Tracer } from "@/core/ports/observability";
 import { documentConverters } from "./index";
 import { DocumentConverter, PDF_OPTION_DESCRIPTORS, titleFromFileName } from "./document-converter";
@@ -192,7 +191,7 @@ describe("titleFromFileName", () => {
   });
 });
 
-// --- convert(): text paths (run in happy-dom) ----------------------------
+// --- convert(): text paths (run in jsdom) --------------------------------
 
 async function readBlob(input: ConvertInput): Promise<string> {
   const out = await converter.convert(input, makeContext());
@@ -226,9 +225,7 @@ describe("convert: text transforms", () => {
   });
 
   it("markdown -> txt strips formatting", async () => {
-    const text = await readBlob(
-      makeInput("# Title\n\n**bold**", FORMATS.markdown, FORMATS.txt),
-    );
+    const text = await readBlob(makeInput("# Title\n\n**bold**", FORMATS.markdown, FORMATS.txt));
     expect(text).toContain("Title");
     expect(text).toContain("bold");
     expect(text).not.toContain("#");
@@ -236,24 +233,18 @@ describe("convert: text transforms", () => {
   });
 
   it("html -> txt extracts text", async () => {
-    const text = await readBlob(
-      makeInput("<p>hello</p><p>world</p>", FORMATS.html, FORMATS.txt),
-    );
+    const text = await readBlob(makeInput("<p>hello</p><p>world</p>", FORMATS.html, FORMATS.txt));
     expect(text).toBe("hello\n\nworld");
   });
 
   it("txt -> html escapes and wraps", async () => {
-    const text = await readBlob(
-      makeInput("a < b\n\nsecond", FORMATS.txt, FORMATS.html),
-    );
+    const text = await readBlob(makeInput("a < b\n\nsecond", FORMATS.txt, FORMATS.html));
     expect(text).toContain("a &lt; b");
     expect(text).toContain("<p>second</p>");
   });
 
   it("txt -> markdown escapes stray markup", async () => {
-    const text = await readBlob(
-      makeInput("# not a heading", FORMATS.txt, FORMATS.markdown),
-    );
+    const text = await readBlob(makeInput("# not a heading", FORMATS.txt, FORMATS.markdown));
     expect(text).toContain("\\#");
   });
 
@@ -269,17 +260,15 @@ describe("convert: text transforms", () => {
 describe("convert: guards", () => {
   it("throws InvalidInputError for an unsupported pair", async () => {
     const input = makeInput("x", FORMATS.txt, FORMATS.pdf); // txt->pdf not supported
-    await expect(converter.convert(input, makeContext())).rejects.toBeInstanceOf(
-      InvalidInputError,
-    );
+    await expect(converter.convert(input, makeContext())).rejects.toBeInstanceOf(InvalidInputError);
   });
 
   it("throws when the signal is already aborted", async () => {
     const controller = new AbortController();
     controller.abort();
     const input = makeInput("# Hi", FORMATS.markdown, FORMATS.html);
-    await expect(
-      converter.convert(input, makeContext(controller.signal)),
-    ).rejects.toMatchObject({ code: "CONVERSION_CANCELED" });
+    await expect(converter.convert(input, makeContext(controller.signal))).rejects.toMatchObject({
+      code: "CONVERSION_CANCELED",
+    });
   });
 });

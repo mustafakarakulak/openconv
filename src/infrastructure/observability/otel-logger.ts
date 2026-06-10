@@ -102,12 +102,7 @@ export class OtelLogger implements Logger {
     if (this.mirrorConsole) this.mirror(level, message, merged, ctx);
   }
 
-  private mirror(
-    level: LogLevel,
-    message: string,
-    attributes: FlatAttributes,
-    ctx: Context,
-  ): void {
+  private mirror(level: LogLevel, message: string, attributes: FlatAttributes, ctx: Context): void {
     const spanContext = trace.getSpanContext(ctx);
     const tag = spanContext ? `[trace ${spanContext.traceId.slice(0, 8)}]` : "[trace -------]";
     const line = `${tag} ${message}`;

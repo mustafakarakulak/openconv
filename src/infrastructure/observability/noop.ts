@@ -4,13 +4,7 @@
  * Installed on the server (no DOM) and whenever telemetry is disabled, so the
  * rest of the app can depend on the ports unconditionally without null checks.
  */
-import type {
-  Logger,
-  Span,
-  SpanOptions,
-  SpanStatusCode,
-  Tracer,
-} from "@/core/ports/observability";
+import type { Logger, Span, SpanOptions, SpanStatusCode, Tracer } from "@/core/ports/observability";
 
 const INVALID_TRACE_ID = "00000000000000000000000000000000";
 const INVALID_SPAN_ID = "0000000000000000";
